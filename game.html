@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Simple 3D Game</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+      }
+      #score {
+        position: absolute;
+        top: 10px;
+        width: 50%;
+        text-align: center;
+        z-index: 100;
+        color: white;
+      }
+    </style>
+
+    <div id="score">10</div>
+  </head>
+  <body>
+    <!-- Include Three.js from a CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+      //grab score
+      const scoreText = document.getElementById("score");
+      let score = 0;
+      scoreText.innerHTML = score;
+
+      // Set up scene, camera, and renderer
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.body.appendChild(renderer.domElement);
+
+      // Create the player (a green cube)
+      const playerGeometry = new THREE.BoxGeometry();
+      const playerMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00ff00,
+      });
+      const player = new THREE.Mesh(playerGeometry, playerMaterial);
+      player.position.set(0, -4.5, 0);
+      player.castShadow = true;
+      scene.add(player);
+
+      // Optionally, add a ground plane for reference
+      const groundGeometry = new THREE.PlaneGeometry(10, 10);
+      const groundMaterial = new THREE.MeshStandardMaterial({
+        color: 0x999999,
+        side: THREE.DoubleSide,
+      });
+      const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+      ground.rotation.x = Math.PI / 2;
+      ground.position.y = -5;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      //create light source
+      const light = new THREE.DirectionalLight(0xffffff, 1);
+      light.position.set(0, 100, 50);
+      light.castShadow = true;
+      scene.add(light);
+
+      //set shadow settings for light
+      light.shadow.mapSize.width = 512; // default
+      light.shadow.mapSize.height = 512; // default
+      light.shadow.camera.near = 0.5; // default
+      light.shadow.camera.far = 500; //
+
+      // Array to hold obstacles
+      const obstacles = [];
+
+      // Function to create a falling obstacle (a red cube)
+      function createObstacle() {
+        const obsGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const obsMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+        const obstacle = new THREE.Mesh(obsGeometry, obsMaterial);
+        obstacle.position.x = (Math.random() - 0.5) * 8;
+        obstacle.position.y = 5;
+
+        obstacle.castShadow = true;
+        scene.add(obstacle);
+        obstacles.push(obstacle);
+      }
+
+      // Set the camera position so we can see the scene
+      camera.position.z = 10;
+      camera.position.y = 0;
+
+      // Handle keyboard input for player movement
+      const keyState = {};
+      window.addEventListener("keydown", (event) => {
+        keyState[event.code] = true;
+      });
+      window.addEventListener("keyup", (event) => {
+        keyState[event.code] = false;
+      });
+
+      // Set up a clock for time-based animation
+      const clock = new THREE.Clock();
+      let obstacleTimer = 0;
+
+      // Main animation loop
+      function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+
+        // Move player left
+        if (keyState["ArrowLeft"] || keyState["KeyA"]) {
+          //check we are in bounds
+          if (player.position.x >= -3) {
+            player.position.x -= 5 * delta;
+          }
+        }
+
+        // Move player right
+        if (keyState["ArrowRight"] || keyState["KeyD"]) {
+          //check we are in bounds
+          if (player.position.x <= 3) {
+            player.position.x += 5 * delta;
+          }
+        }
+
+        // Spawn a new obstacle roughly every second
+        obstacleTimer += delta;
+        if (obstacleTimer > 1) {
+          createObstacle();
+          obstacleTimer = 0;
+        }
+
+        // Update obstacles (falling movement and simple collision detection)
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          obstacles[i].position.y -= 3 * delta;
+          // Remove obstacles that have fallen off the screen
+          if (obstacles[i].position.y < -4.5) {
+            scene.remove(obstacles[i]);
+            obstacles.splice(i, 1);
+            if (obstacles[i].position.distanceTo(player.position) > 1) {
+              score++;
+              scoreText.innerHTML = score;
+            }
+          }
+          // Check collision with player (using simple distance check)
+          if (obstacles[i].position.distanceTo(player.position) < 1) {
+            alert("Game Over!");
+            window.location.reload(); // Restart game on collision
+          }
+          //check for objects that have been dodged
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      // Adjust camera and renderer when the window is resized
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>
