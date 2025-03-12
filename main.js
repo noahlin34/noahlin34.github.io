@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 
+
+
+
+
+
 //prompt for name
 let name = prompt("Please enter your name")
 
