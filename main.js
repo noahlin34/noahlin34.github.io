@@ -1,12 +1,11 @@
 import * as THREE from 'three';
-
-
-
-
-
+import { getPlayers, addPlayer, setPlayerScore, dropPlayer } from './backend';
 
 //prompt for name
 let name = prompt("Please enter your name")
+const id = await addPlayer(name);
+console.log(id);
+
 
 //grab score
 const scoreText = document.getElementById("score");
@@ -213,11 +212,10 @@ function animate() {
         }
         // Check collision with player (using simple distance check)
         if (obstacles[i].position.distanceTo(player.position) < 1) {
+             setPlayerScore(id, parseInt(score,10));
             alert("Game Over! Your Score Was: " + score);
             window.location.reload(); // Restart game on collision
         }
-
-
 
 
     }
@@ -243,7 +241,7 @@ function animate() {
 }
 
 animate();
-
+console.log("test");
 // Adjust camera and renderer when the window is resized
 window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
